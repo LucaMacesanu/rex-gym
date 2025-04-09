@@ -26,7 +26,14 @@ class SimplePPOPolicy(object):
                                                            scale=True,
                                                            clip=5,
                                                            name="normalize_observ")
-        self._restore_policy(network,
+        
+
+        if hasattr(network, "tag"):
+            network_class = utility.load_class_from_tag(network.tag)
+        else:
+            network_class = network  # already a class, like in tests or manual overrides
+
+        self._restore_policy(network_class,
                              policy_layers=policy_layers,
                              value_layers=value_layers,
                              action_size=action_size,
@@ -44,6 +51,7 @@ class SimplePPOPolicy(object):
       action_size: The dimension of the action space.
       checkpoint: The checkpoint path.
     """
+        # breakpoint()
         observ = self._observ_filter.transform(self.observation_placeholder)
         with tf.compat.v1.variable_scope("network/rnn"):
             self.network = network(policy_layers=policy_layers,
@@ -65,6 +73,7 @@ class SimplePPOPolicy(object):
             self.update_state = self.last_state.assign(new_state)
 
         saver = utility.define_saver(exclude=(r"temporary/.*",))
+        print("Checkpoint Path: ",checkpoint)
         saver.restore(self.sess, checkpoint)
 
     def get_action(self, observation):

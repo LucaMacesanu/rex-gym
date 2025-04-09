@@ -22,13 +22,19 @@ def cli():
               type=click.Choice(mark_constants.MARK_LIST))
 @click.option('--mark', '-m', default="base", help="Set the Rex robot version.",
               type=click.Choice(mark_constants.MARK_LIST))
-def policy(env, arg, flag, open_loop, inverse_kinematics, terrain, mark):
-    # import locally the PolicyPlayer to avoid the pyBullet loading at every cli command
+@click.option('--policy-dir', '-pd', default=None, help="Path to a trained policy directory.")
+
+def policy(env, arg, flag, open_loop, inverse_kinematics, terrain, mark, policy_dir):
     from rex_gym.playground.policy_player import PolicyPlayer
-    # parse input args
     args, signal_type = _parse_input(arg, flag, terrain, mark, open_loop, inverse_kinematics)
-    # run the Policy Player
-    PolicyPlayer(env, args, signal_type).play()
+    PolicyPlayer(env, args, signal_type, policy_dir).play()
+# def policy(env, arg, flag, open_loop, inverse_kinematics, terrain, mark):
+#     # import locally the PolicyPlayer to avoid the pyBullet loading at every cli command
+#     from rex_gym.playground.policy_player import PolicyPlayer
+#     # parse input args
+#     args, signal_type = _parse_input(arg, flag, terrain, mark, open_loop, inverse_kinematics)
+#     # run the Policy Player
+#     PolicyPlayer(env, args, signal_type).play()
 
 
 @cli.command()
@@ -36,7 +42,8 @@ def policy(env, arg, flag, open_loop, inverse_kinematics, terrain, mark):
               type=click.Choice([e for e in flag_mapper.ENV_ID_TO_ENV_NAMES.keys()], case_sensitive=True))
 @click.option('--arg', '-a', type=(str, float), help="The Environment's arg(s).", multiple=True)
 @click.option('--flag', '-f', type=(str, bool), help="The Environment's flag(s).", multiple=True)
-@click.option('--log-dir', '-log', '-l', required=True, help="The path where the log directory will be created.")
+@click.option('--log-dir', '-log', '-l', required=False, help="The path where the log directory will be created.")
+# @click.option('--log-dir', '-log', '-l', required=True, help="The path where the log directory will be created.")
 @click.option('--playground', '-p', type=bool, default=False, help="Playground training: 1 agent, render enabled.")
 @click.option('--agents-number', '-n', type=int, default=None, help="Set the number of parallel agents.")
 @click.option('--open-loop', '-ol', is_flag=True, help="Use the open loop controller")
@@ -45,6 +52,10 @@ def policy(env, arg, flag, open_loop, inverse_kinematics, terrain, mark):
               type=click.Choice([t for t in flag_mapper.TERRAIN_TYPE.keys()]))
 @click.option('--mark', '-m', default="base", help="Set the Rex robot version.",
               type=click.Choice(mark_constants.MARK_LIST))
+
+
+
+
 def train(env, arg, flag, log_dir, playground, agents_number, open_loop, inverse_kinematics, terrain, mark):
     # import locally the Trainer to avoid the pyBullet loading at every cli command
     from rex_gym.playground.trainer import Trainer

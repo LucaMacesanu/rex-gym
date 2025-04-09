@@ -17,7 +17,7 @@ import os
 import re
 import warnings
 
-import ruamel.yaml as yaml
+import ruamel.yaml as YAML
 import tensorflow as tf
 
 from rex_gym.agents.tools import wrappers
@@ -27,8 +27,8 @@ from rex_gym.agents.tools.count_weights import count_weights
 from rex_gym.agents.tools.in_graph_batch_env import InGraphBatchEnv
 from rex_gym.agents.tools.simulate import simulate
 
-warnings.simplefilter('ignore', yaml.error.UnsafeLoaderWarning)
-warnings.simplefilter('ignore', yaml.error.ReusedAnchorWarning)
+warnings.simplefilter('ignore', YAML.error.UnsafeLoaderWarning)
+warnings.simplefilter('ignore', YAML.error.ReusedAnchorWarning)
 
 
 def define_simulation_graph(batch_env, algo_cls, config):
@@ -168,7 +168,7 @@ def save_config(config, logdir=None):
         tf.io.gfile.makedirs(config.logdir)
         config_path = os.path.join(config.logdir, 'config.yaml')
         with tf.io.gfile.GFile(config_path, 'w') as file_:
-            yaml.dump(config, file_, default_flow_style=False)
+            YAML.dump(config, file_, default_flow_style=False)
     else:
         message = ('Start a new run without storing summaries and checkpoints since no '
                    'logging directory was specified.')
@@ -176,25 +176,65 @@ def save_config(config, logdir=None):
     return config
 
 
+# def load_config(logdir):
+#     """Load a configuration from the log directory.
+
+#   Args:
+#     logdir: The logging directory containing the configuration file.
+
+#   Raises:
+#     IOError: The logging directory does not contain a configuration file.
+
+#   Returns:
+#     Configuration object.
+#   """
+    
+#     config_path = logdir and os.path.join(logdir, 'config.yaml')
+#     # breakpoint()
+#     if not config_path or not tf.io.gfile.exists(config_path):
+#         message = ('Cannot resume an existing run since the logging directory does not '
+#                    'contain a configuration file.')
+#         raise IOError(message)
+#     with tf.io.gfile.GFile(config_path, 'r') as file_:
+#         yaml = YAML.YAML(typ='rt')
+#         config = yaml.load(file_)
+#     message = 'Resume run and write summaries and checkpoints to {}.'
+#     # breakpoint()
+#     # tf.compat.v1.logging.info(message.format(config["logdir"]))
+#     return config
+
+import types
+
+def dict_to_namespace(d):
+    """Recursively convert dictionaries to SimpleNamespaces for attribute access."""
+    if isinstance(d, dict):
+        return types.SimpleNamespace(**{k: dict_to_namespace(v) for k, v in d.items()})
+    return d
+
 def load_config(logdir):
     """Load a configuration from the log directory.
 
-  Args:
-    logdir: The logging directory containing the configuration file.
+    Args:
+        logdir: The logging directory containing the configuration file.
 
-  Raises:
-    IOError: The logging directory does not contain a configuration file.
+    Raises:
+        IOError: The logging directory does not contain a configuration file.
 
-  Returns:
-    Configuration object.
-  """
+    Returns:
+        Configuration object with attribute-style access.
+    """
     config_path = logdir and os.path.join(logdir, 'config.yaml')
     if not config_path or not tf.io.gfile.exists(config_path):
         message = ('Cannot resume an existing run since the logging directory does not '
                    'contain a configuration file.')
         raise IOError(message)
     with tf.io.gfile.GFile(config_path, 'r') as file_:
-        config = yaml.load(file_)
+        yaml = YAML.YAML(typ='rt')
+        config_dict = yaml.load(file_)
+
+    config = dict_to_namespace(config_dict)
+    if hasattr(config, 'dictitems'):
+      config = config.dictitems
     message = 'Resume run and write summaries and checkpoints to {}.'
     tf.compat.v1.logging.info(message.format(config.logdir))
     return config
@@ -204,3 +244,15 @@ def set_up_logging():
     """Configure the TensorFlow logger."""
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
     logging.getLogger('tensorflow').propagate = False
+
+import importlib
+
+def load_class_from_tag(tag):
+    """Given a YAML class tag, import and return the actual class."""
+    if tag.startswith('tag:yaml.org,2002:python/name:'):
+        # class_path = tag.replace('tag:yaml.org,2002:python/name:', '')
+        class_path = str(tag).replace('tag:yaml.org,2002:python/name:', '')
+        module_path, class_name = class_path.rsplit('.', 1)
+        module = importlib.import_module(module_path)
+        return getattr(module, class_name)
+    raise ValueError(f"Unsupported tag format: {tag}")

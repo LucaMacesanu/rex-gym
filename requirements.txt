@@ -4,4 +4,4 @@ gym==0.17.1
 tensorflow==1.15.5
 ruamel.yaml
 click
-tensorflow-probability==0.8
+tensorflow-probability==0.9
