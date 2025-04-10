@@ -249,6 +249,7 @@ import importlib
 
 def load_class_from_tag(tag):
     """Given a YAML class tag, import and return the actual class."""
+    # breakpoint()
     if tag.startswith('tag:yaml.org,2002:python/name:'):
         # class_path = tag.replace('tag:yaml.org,2002:python/name:', '')
         class_path = str(tag).replace('tag:yaml.org,2002:python/name:', '')
