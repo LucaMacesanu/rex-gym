@@ -168,7 +168,8 @@ def save_config(config, logdir=None):
         tf.io.gfile.makedirs(config.logdir)
         config_path = os.path.join(config.logdir, 'config.yaml')
         with tf.io.gfile.GFile(config_path, 'w') as file_:
-            YAML.dump(config, file_, default_flow_style=False)
+            yaml = YAML.YAML(typ='unsafe', pure=True)
+            yaml.dump(config, file_)
     else:
         message = ('Start a new run without storing summaries and checkpoints since no '
                    'logging directory was specified.')
